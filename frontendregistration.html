@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>School LMS - Register</title>
+    <style>
+        body {
+        font-family: Arial, sans-serif;
+        background: #f0f2f5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0; /* Correction #1: Added margin reset */
+        }
+        .register-container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        width: 400px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-sizing: border-box; /* Correction #2: Added box-sizing for consistent sizing */
+        }
+        h2 {
+        margin-bottom: 20px;
+        text-align: center;
+        }
+        label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"],
+        select {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        }
+        button {
+        width: 100%;
+        background-color: #28a745;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 20px;
+        }
+        button:hover {
+        background-color: #218838;
+        }
+        .message {
+        margin-top: 15px;
+        color: red;
+        text-align: center;
+        }
+        .login-link {
+        margin-top: 15px;
+        text-align: center;
+        }
+        .login-link a {
+        color: #007bff;
+        text-decoration: none;
+        }
+        .login-link a:hover {
+        text-decoration: underline;
+        }
+    </style>
+    </head> <!-- Correction #3: Added missing closing </head> tag -->
+
+    <body> <!-- Correction #4: Added missing <body> tag -->
+
+        <div class="register-container">
+            <h2>Register for School LMS</h2>
+            <label for="role">Select Role</label>
+            <select id="role" onchange="renderRoleFields()">
+                <option value="">-- Select Role --</option>
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="parent">Parent</option>
+                <option value="worker">Worker</option>
+            </select>
+
+            <form id="registrationForm" onsubmit="event.preventDefault(); registerUser ();">
+                <div id="roleFields"></div>
+
+                <label for="email">Email</label>
+                <input type="email" id="email" required />
+
+                <label for="password">Password</label>
+                <input type="password" id="password" required />
+
+                <button type="submit">Register</button>
+            </form>
+
+            <div class="message" id="message"></div>
+            <div class="login-link">
+            Already have an account? <a href="login.html">Login here</a>
+            </div>
+        </div>
+
+        <script>
+            function renderRoleFields() {
+            const role = document.getElementById('role').value;
+            const container = document.getElementById('roleFields');
+            container.innerHTML = '';
+
+            if (!role) return;
+
+            if (role === 'student') {
+                container.innerHTML = `
+                <label for="name">Full Name</label>
+                <input type="text" id="name" required />
+
+                <label for="admission_number">Admission Number</label>
+                <input type="text" id="admission_number" required />
+
+                <label for="age">Age</label>
+                <input type="number" id="age" min="3" max="25" required />
+
+                <label for="grade">Grade</label>
+                <input type="text" id="grade" required />
+
+                <label for="subjects">Subjects (comma separated)</label>
+                <input type="text" id="subjects" placeholder="Math, English, Science" />
+                `;
+            } else if (role === 'teacher') {
+                container.innerHTML = `
+                <label for="name">Full Name</label>
+                <input type="text" id="name" required />
+
+                <label for="age">Age</label>
+                <input type="number" id="age" min="18" max="70" required />
+
+                <label for="tsc_number">TSC Number</label>
+                <input type="text" id="tsc_number" required />
+
+                <label for="subjects_teaching">Subjects Teaching (comma separated)</label>
+                <input type="text" id="subjects_teaching" placeholder="Math, English" required />
+
+                <label for="position">Position</label>
+                <input type="text" id="position" placeholder="Teacher, Head of Department" required />
+                `;
+            } else if (role === 'parent') {
+                container.innerHTML = `
+                <label for="name">Full Name</label>
+                <input type="text" id="name" required />
+
+                <label for="phone">Phone Number</label>
+                <input type="text" id="phone" required />
+                `;
+            } else if (role === 'worker') {
+                container.innerHTML = `
+                <label for="name">Full Name</label>
+                <input type="text" id="name" required />
+
+                <label for="age">Age</label>
+                <input type="number" id="age" min="18" max="70" required />
+
+                <label for="role_worker">Role in School</label>
+                <input type="text" id="role_worker" placeholder="Cleaner, Security" required />
+
+                <label for="id_number">ID Number</label>
+                <input type="text" id="id_number" required />
+                `;
+            }
+            }
+
+            async function registerUser () {
+            const role = document.getElementById('role').value;
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = '';
+
+            if (!role) {
+                messageDiv.textContent = 'Please select a role.';
+                return;
+            }
+
+            // Collect common fields
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) {
+                messageDiv.textContent = 'Email and password are required.';
+                return;
+            }
+
+            // Collect role-specific data
+            let user_data = {};
+
+            if (role === 'student') {
+                user_data.name = document.getElementById('name').value.trim();
+                user_data.admission_number = document.getElementById('admission_number').value.trim();
+                user_data.age = parseInt(document.getElementById('age').value);
+                user_data.grade = document.getElementById('grade').value.trim();
+                const subjectsStr = document.getElementById('subjects').value.trim();
+                user_data.subjects = subjectsStr ? subjectsStr.split(',').map(s => s.trim()) : [];
+            } else if (role === 'teacher') {
+                user_data.name = document.getElementById('name').value.trim();
+                user_data.age = parseInt(document.getElementById('age').value);
+                user_data.tsc_number = document.getElementById('tsc_number').value.trim();
+                const subjectsStr = document.getElementById('subjects_teaching').value.trim();
+                user_data.subjects_teaching = subjectsStr ? subjectsStr.split(',').map(s => s.trim()) : [];
+                user_data.position = document.getElementById('position').value.trim();
+            } else if (role === 'parent') {
+                user_data.name = document.getElementById('name').value.trim();
+                user_data.phone = document.getElementById('phone').value.trim();
+            } else if (role === 'worker') {
+                user_data.name = document.getElementById('name').value.trim();
+                user_data.age = parseInt(document.getElementById('age').value);
+                user_data.role = document.getElementById('role_worker').value.trim();
+                user_data.id_number = document.getElementById('id_number').value.trim();
+            }
+
+            // Basic validation
+            for (const key in user_data) {
+                if (user_data[key] === '' || user_data[key] === null || user_data[key] === undefined || (typeof user_data[key] === 'number' && isNaN(user_data[key]))) {
+                messageDiv.textContent = `Please fill in the ${key.replace(/_/g, ' ')} field.`;
+                return;
+                }
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, role, user_data }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                alert('Registration successful! You can now login.');
+                window.location.href = 'login.html';
+                } else {
+                messageDiv.textContent = data.error || 'Registration failed.';
+                }
+            } catch (error) {
+                messageDiv.textContent = 'Network error. Please try again later.';
+            }
+            }
+        </script>
+
+    </body> <!-- Correction #5: Added missing closing </body> tag -->
+</html>

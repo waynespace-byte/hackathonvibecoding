@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>🔑 Login</h2>
+    <form id="loginForm">
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Password</label>
+      <input type="password" name="password" required>
+
+      <button type="submit">Login</button>
+    </form>
+    <p id="loginMessage"></p>
+    <p>Don’t have an account? <a href="/register">Register here</a></p>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const data = {
+        email: this.email.value,
+        password: this.password.value
+      };
+
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+      const msg = document.getElementById("loginMessage");
+
+      if (res.ok) {
+        msg.innerText = "✅ " + result.message;
+        msg.style.color = "green";
+        localStorage.setItem("token", result.token);
+        setTimeout(() => window.location.href = "/dashboard", 1500);
+      } else {
+        msg.innerText = "❌ " + result.error;
+        msg.style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Registration</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h2>🎓 Create Your Account</h2>
+    <form id="registerForm">
+      <label>Full Name</label>
+      <input type="text" name="fullname" required>
+
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Password</label>
+      <input type="password" name="password" required>
+
+      <label>Role</label>
+      <select name="role" required>
+        <option value="student">Student</option>
+        <option value="teacher">Teacher</option>
+        <option value="parent">Parent</option>
+        <option value="worker">Worker</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <button type="submit">Register</button>
+    </form>
+    <p id="registerMessage"></p>
+    <p>Already have an account? <a href="/login">Login here</a></p>
+  </div>
+
+  <script>
+    document.getElementById("registerForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const data = {
+        fullname: this.fullname.value,
+        email: this.email.value,
+        password: this.password.value,
+        role: this.role.value
+      };
+
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+      const msg = document.getElementById("registerMessage");
+
+      if (res.ok) {
+        msg.innerText = "✅ " + result.message;
+        msg.style.color = "green";
+        setTimeout(() => window.location.href = "/login", 1500);
+      } else {
+        msg.innerText = "❌ " + result.error;
+        msg.style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>

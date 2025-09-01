@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>School LMS - Video Call</title>
+  <style>
+    video {
+      width: 45%;
+      margin: 5px;
+      border: 1px solid black;
+    }
+    #videos {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+  <h2>Live Video Call with Screen Sharing</h2>
+  <div id="videos">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+  </div>
+  <button id="startCallBtn">Start Call</button>
+  <button id="shareScreenBtn">Share Screen</button>
+  <button id="hangupBtn">Hang Up</button>
+
+  <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
+  <script>
+    const socket = io('http://localhost:5000');
+    const room = 'classroom1'; // example room
+    let localStream;
+    let peerConnection;
+    const config = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' }
+      ]
+    };
+
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const startCallBtn = document.getElementById('startCallBtn');
+    const shareScreenBtn = document.getElementById('shareScreenBtn');
+    const hangupBtn = document.getElementById('hangupBtn');
+
+    startCallBtn.onclick = startCall;
+    shareScreenBtn.onclick = shareScreen;
+    hangupBtn.onclick = hangUp;
+
+    socket.on('connect', () => {
+      socket.emit('join_room', { room });
+    });
+
+    socket.on('signal', async (data) => {
+      if (!peerConnection) await createPeerConnection();
+
+      if (data.signal.type === 'offer') {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.signal));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit('signal', { room, signal: peerConnection.localDescription, to: data.from });
+      } else if (data.signal.type === 'answer') {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.signal));
+      } else if (data.signal.candidate) {
+        try {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(data.signal.candidate));
+        } catch (e) {
+          console.error('Error adding received ice candidate', e);
+        }
+      }
+    });
+
+    async function startCall() {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
+      await createPeerConnection();
+
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      socket.emit('signal', { room, signal: offer });
+    }
+
+    async function createPeerConnection() {
+      peerConnection = new RTCPeerConnection(config);
+
+      // Add local tracks
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+      peerConnection.ontrack = (event) => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit('signal', { room, signal: { candidate: event.candidate } });
+        }
+      };
+    }
+
+    async function shareScreen() {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenTrack = screenStream.getVideoTracks()[0];
+
+        // Replace video track in peer connection
+        const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+        sender.replaceTrack(screenTrack);
+
+        screenTrack.onended = () => {
+          // Revert to camera video when screen sharing stops
+          sender.replaceTrack(localStream.getVideoTracks()[0]);
+        };
+      } catch (err) {
+        alert('Screen sharing failed: ' + err.message);
+      }
+    }
+
+    function hangUp() {
+      if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localVideo.srcObject = null;
+      }
+      remoteVideo.srcObject = null;
+      socket.emit('leave_room', { room });
+    }
+  </script>
+</body>
+</html>
